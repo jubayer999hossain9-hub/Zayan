@@ -1,0 +1,7 @@
+[build]
+  base = "zayan-house-full-package/zayan-package/backend"
+  command = "npm install && npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
