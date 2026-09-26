@@ -11,7 +11,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Email and password required" }, { status: 400 });
   }
 
-  const [user] = await db.select().from(adminUsers).where(eq(adminUsers.email, email));
+  let user;
+  try {
+    [user] = await db.select().from(adminUsers).where(eq(adminUsers.email, email));
+  } catch (err) {
+    console.error("POST /api/admin/login: database error:", err);
+    return NextResponse.json(
+      { error: "Login is temporarily unavailable" },
+      { status: 503 }
+    );
+  }
+
   if (!user || !verifyPassword(password, user.passwordHash)) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }

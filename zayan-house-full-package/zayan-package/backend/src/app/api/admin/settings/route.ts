@@ -26,20 +26,28 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "key is required" }, { status: 400 });
   }
 
-  const [existing] = await db.select().from(siteSettings).where(eq(siteSettings.key, key));
-  const oldValue = existing?.value ?? null;
+  try {
+    const [existing] = await db.select().from(siteSettings).where(eq(siteSettings.key, key));
+    const oldValue = existing?.value ?? null;
 
-  await db
-    .insert(siteSettings)
-    .values({ key, value })
-    .onConflictDoUpdate({ target: siteSettings.key, set: { value, updatedAt: new Date() } });
+    await db
+      .insert(siteSettings)
+      .values({ key, value })
+      .onConflictDoUpdate({ target: siteSettings.key, set: { value, updatedAt: new Date() } });
 
-  await db.insert(activityLogs).values({
-    adminEmail: session.email,
-    action: "update_setting",
-    module: "smc",
-    details: { key, oldValue, newValue: value },
-  });
+    await db.insert(activityLogs).values({
+      adminEmail: session.email,
+      action: "update_setting",
+      module: "smc",
+      details: { key, oldValue, newValue: value },
+    });
 
-  return NextResponse.json({ ok: true, key, value });
+    return NextResponse.json({ ok: true, key, value });
+  } catch (err) {
+    console.error("PUT /api/admin/settings: database error:", err);
+    return NextResponse.json(
+      { error: "Unable to save setting — database is temporarily unavailable" },
+      { status: 503 }
+    );
+  }
 }
